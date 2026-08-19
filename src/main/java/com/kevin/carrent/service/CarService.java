@@ -2,6 +2,7 @@ package com.kevin.carrent.service;
 
 import com.kevin.carrent.dto.CarCreateRequest;
 import com.kevin.carrent.dto.CarResponse;
+import com.kevin.carrent.dto.CarUpdateRequest;
 import com.kevin.carrent.entity.Car;
 import com.kevin.carrent.mapper.CarMapper;
 import com.kevin.carrent.repository.CarRepository;
@@ -28,13 +29,17 @@ public class CarService {
         return carMapper.toResponse(savedCar);
     }
 
-    public List<Car> getCars() {
-        return carRepository.findAll();
+    public List<CarResponse> getCars() {
+        List<Car> cars = carRepository.findAll();
+        return cars.stream()
+                .map(carMapper::toResponse)
+                .toList();
     }
 
-    public Car getCarById(Long id) {
-        return carRepository.findById(id)
+    public CarResponse getCarById(Long id) {
+        Car car = carRepository.findById(id)
                 .orElseThrow(() -> new CarNotFoundException("Car with id " + id + " not found"));
+        return carMapper.toResponse(car);
     }
 
     public void deleteCar(Long id) {
@@ -42,5 +47,18 @@ public class CarService {
                 .orElseThrow(() ->
                         new CarNotFoundException("Car with id " + id + " not found"));
         carRepository.deleteById(id);
+    }
+
+    public CarResponse updateCar(Long id, CarUpdateRequest request) {
+
+        Car car = carRepository.findById(id)
+                .orElseThrow(() ->
+                        new CarNotFoundException("Car with id " + id + " not found"));
+
+        carMapper.updateEntity(request, car);
+
+        Car updatedCar = carRepository.save(car);
+
+        return carMapper.toResponse(updatedCar);
     }
 }

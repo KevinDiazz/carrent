@@ -2,14 +2,14 @@ package com.kevin.carrent.controller;
 
 import com.kevin.carrent.dto.CarCreateRequest;
 import com.kevin.carrent.dto.CarResponse;
-import com.kevin.carrent.entity.Car;
+import com.kevin.carrent.dto.CarUpdateRequest;
 import com.kevin.carrent.service.CarService;
+import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
-import java.util.Optional;
 
 @RestController
 @RequestMapping("/cars")
@@ -21,19 +21,20 @@ public class CarController {
     }
 
     @GetMapping
-    public ResponseEntity<List<Car>> getCars() {
+    public ResponseEntity<List<CarResponse>> getCars() {
         return ResponseEntity
                 .status(HttpStatus.OK)
                 .body(carService.getCars());
     }
 
     @GetMapping("/{id}")
-    public ResponseEntity<Car> getCarById(@PathVariable Long id) {
+    public ResponseEntity<CarResponse> getCarById(@PathVariable Long id) {
         return ResponseEntity.ok(carService.getCarById(id));
     }
 
     @PostMapping
-    public ResponseEntity<CarResponse> createCar(@RequestBody CarCreateRequest car) {
+    public ResponseEntity<CarResponse> createCar(
+            @Valid @RequestBody CarCreateRequest car) {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(carService.createCar(car));
@@ -46,5 +47,12 @@ public class CarController {
         return ResponseEntity
                 .status(HttpStatus.NO_CONTENT)
                 .build();
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<CarResponse> updateCar(
+            @PathVariable Long id,
+            @Valid @RequestBody CarUpdateRequest request) {
+        return ResponseEntity.ok(carService.updateCar(id, request));
     }
 }

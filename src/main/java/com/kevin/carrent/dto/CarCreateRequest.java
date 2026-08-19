@@ -1,16 +1,29 @@
 package com.kevin.carrent.dto;
 
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
+
 import java.math.BigDecimal;
 
 public class CarCreateRequest {
 
+    @NotBlank
     private String brand;
+    @NotBlank
     private String model;
+    @NotNull
     private Integer year;
+    @NotBlank
     private String licensePlate;
+    @NotBlank
     private String fuelType;
+    @NotBlank
     private String transmission;
+    @NotNull
+    @Positive
     private BigDecimal pricePerDay;
+    @NotBlank
     private String status;
 
     public CarCreateRequest() {
