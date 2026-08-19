@@ -11,5 +11,5 @@ import org.mapstruct.MappingTarget;
 public interface CarMapper {
     Car toEntity(CarCreateRequest request);
     CarResponse toResponse(Car car);
-    void updateEntity(CarUpdateRequest request, @MappingTarget Car car);
+    Car updateEntity(CarUpdateRequest request, @MappingTarget Car car);
 }
