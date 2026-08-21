@@ -1,5 +1,7 @@
 package com.kevin.carrent.controller;
 
+import com.kevin.carrent.dto.LoginRequest;
+import com.kevin.carrent.dto.LoginResponse;
 import com.kevin.carrent.dto.RegisterRequest;
 import com.kevin.carrent.dto.RegisterResponse;
 import com.kevin.carrent.service.UserService;
@@ -25,5 +27,10 @@ public class UserController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(userService.registerUser(request));
+    }
+
+    @PostMapping("/login")
+    public ResponseEntity<LoginResponse> login(@Valid @RequestBody LoginRequest request) {
+        return ResponseEntity.ok(userService.login(request));
     }
 }
