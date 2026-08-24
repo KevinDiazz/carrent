@@ -12,7 +12,7 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
-
+import io.jsonwebtoken.JwtException;
 import java.io.IOException;
 import java.util.List;
 
@@ -35,30 +35,34 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             filterChain.doFilter(request, response);
             return;
         }
-
         String token = authHeader.substring(7);
+        try {
+            String email = jwtService.extractEmail(token);
 
-        String email = jwtService.extractEmail(token);
+            User user = userRepository.findByEmail(email)
+                    .orElse(null);
 
-        User user = userRepository.findByEmail(email)
-                .orElse(null);
+            if (user != null && jwtService.isTokenValid(token, user)) {
 
-        if (user != null && jwtService.isTokenValid(token, user)) {
+                UsernamePasswordAuthenticationToken authentication =
+                        new UsernamePasswordAuthenticationToken(
+                                user,
+                                null,
+                                List.of(
+                                        new SimpleGrantedAuthority(
+                                                "ROLE_" + user.getRole().name()
+                                        )
+                                )
+                        );
 
-            UsernamePasswordAuthenticationToken authentication =
-                    new UsernamePasswordAuthenticationToken(
-                            user,
-                            null,
-                            List.of(
-                                    new SimpleGrantedAuthority(
-                                            "ROLE_" + user.getRole().name()
-                                    )
-                            )
-                    );
+                SecurityContextHolder
+                        .getContext()
+                        .setAuthentication(authentication);
+            }
 
-            SecurityContextHolder
-                    .getContext()
-                    .setAuthentication(authentication);
+        } catch (JwtException | IllegalArgumentException ex) {
+
+            SecurityContextHolder.clearContext();
         }
 
         filterChain.doFilter(request, response);

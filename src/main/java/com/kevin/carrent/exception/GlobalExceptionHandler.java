@@ -85,4 +85,19 @@ public class GlobalExceptionHandler {
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(errorResponse);
     }
+    @ExceptionHandler(LicensePlateAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleLicensePlateAlreadyExists(
+            LicensePlateAlreadyExistsException ex) {
+
+        ErrorResponse errorResponse = new ErrorResponse(
+                HttpStatus.CONFLICT.value(),
+                ex.getMessage(),
+                LocalDateTime.now(),
+                null
+        );
+
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(errorResponse);
+    }
 }
