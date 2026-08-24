@@ -32,4 +32,40 @@ public class JwtService {
                 .signWith(key)
                 .compact();
     }
+
+    public String extractEmail(String token) {
+
+        SecretKey key = Keys.hmacShaKeyFor(
+                secret.getBytes(StandardCharsets.UTF_8)
+        );
+
+        return Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getSubject();
+    }
+
+    public boolean isTokenValid(String token, User user) {
+        String email = extractEmail(token);
+
+        return email.equals(user.getEmail()) && !isTokenExpired(token);
+    }
+
+    private boolean isTokenExpired(String token) {
+        SecretKey key = Keys.hmacShaKeyFor(
+                secret.getBytes(StandardCharsets.UTF_8)
+        );
+
+        Date expiration = Jwts.parser()
+                .verifyWith(key)
+                .build()
+                .parseSignedClaims(token)
+                .getPayload()
+                .getExpiration();
+
+        return expiration.before(new Date());
+    }
+
 }
