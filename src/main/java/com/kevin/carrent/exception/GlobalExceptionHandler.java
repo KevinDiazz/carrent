@@ -14,9 +14,14 @@ import java.util.Map;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    @ExceptionHandler({
+            CarNotFoundException.class,
+            CarModelNotFoundException.class,
+            OfficeNotFoundException.class
+    })
+    public ResponseEntity<ErrorResponse> handleResourceNotFound(
+            RuntimeException ex) {
 
-    @ExceptionHandler(CarNotFoundException.class)
-    public ResponseEntity<ErrorResponse> handleCarNotFound(CarNotFoundException ex) {
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.NOT_FOUND.value(),
                 ex.getMessage(),
@@ -54,40 +59,12 @@ public class GlobalExceptionHandler {
                 .body(errorResponse);
     }
 
-    @ExceptionHandler(EmailAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleEmailAlreadyExists(
-            EmailAlreadyExistsException ex) {
-
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.CONFLICT.value(),
-                ex.getMessage(),
-                LocalDateTime.now(),
-                null
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.CONFLICT)
-                .body(errorResponse);
-    }
-
-    @ExceptionHandler(InvalidCredentialsException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidCredentials(
-            InvalidCredentialsException ex) {
-
-        ErrorResponse errorResponse = new ErrorResponse(
-                HttpStatus.UNAUTHORIZED.value(),
-                ex.getMessage(),
-                LocalDateTime.now(),
-                null
-        );
-
-        return ResponseEntity
-                .status(HttpStatus.UNAUTHORIZED)
-                .body(errorResponse);
-    }
-    @ExceptionHandler(LicensePlateAlreadyExistsException.class)
-    public ResponseEntity<ErrorResponse> handleLicensePlateAlreadyExists(
-            LicensePlateAlreadyExistsException ex) {
+    @ExceptionHandler({
+            EmailAlreadyExistsException.class,
+            LicensePlateAlreadyExistsException.class
+    })
+    public ResponseEntity<ErrorResponse> handleConflict(
+            RuntimeException ex) {
 
         ErrorResponse errorResponse = new ErrorResponse(
                 HttpStatus.CONFLICT.value(),

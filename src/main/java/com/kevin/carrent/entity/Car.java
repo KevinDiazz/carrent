@@ -9,10 +9,9 @@ public class Car {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    @Column(nullable = false)
-    private String brand;
-    @Column(nullable = false)
-    private String model;
+    @ManyToOne
+    @JoinColumn(name = "car_model_id", nullable = false)
+    private CarModel carModel;
     @Column(nullable = false)
     private Integer year;
     @Column(nullable = false, unique = true)
@@ -25,29 +24,15 @@ public class Car {
     private BigDecimal pricePerDay;
     @Column(nullable = false)
     private String status;
+    @ManyToOne
+    @JoinColumn(name = "office_id", nullable = false)
+    private Office office;
 
     public Car() {
     }
 
     public Long getId() {
         return id;
-    }
-
-
-    public String getBrand() {
-        return brand;
-    }
-
-    public void setBrand(String brand) {
-        this.brand = brand;
-    }
-
-    public String getModel() {
-        return model;
-    }
-
-    public void setModel(String model) {
-        this.model = model;
     }
 
     public Integer getYear() {
@@ -96,5 +81,21 @@ public class Car {
 
     public void setStatus(String status) {
         this.status = status;
+    }
+
+    public CarModel getCarModel() {
+        return carModel;
+    }
+
+    public void setCarModel(CarModel carModel) {
+        this.carModel = carModel;
+    }
+
+    public Office getOffice() {
+        return office;
+    }
+
+    public void setOffice(Office office) {
+        this.office = office;
     }
 }

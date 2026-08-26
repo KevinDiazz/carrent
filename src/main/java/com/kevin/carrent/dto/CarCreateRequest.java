@@ -8,49 +8,48 @@ import java.math.BigDecimal;
 
 public class CarCreateRequest {
 
-    @NotBlank
-    private String brand;
-    @NotBlank
-    private String model;
+    @NotNull
+    private Long carModelId;
+
+    @NotNull
+    private Long officeId;
+
     @NotNull
     private Integer year;
+
     @NotBlank
     private String licensePlate;
+
     @NotBlank
     private String fuelType;
+
     @NotBlank
     private String transmission;
+
     @NotNull
     @Positive
     private BigDecimal pricePerDay;
+
     @NotBlank
     private String status;
 
     public CarCreateRequest() {
     }
 
-    public String getBrand() {
-        return brand;
+    public Long getCarModelId() {
+        return carModelId;
     }
 
-    public void setBrand(String brand) {
-        this.brand = brand;
+    public void setCarModelId(Long carModelId) {
+        this.carModelId = carModelId;
     }
 
-    public String getModel() {
-        return model;
+    public Long getOfficeId() {
+        return officeId;
     }
 
-    public void setModel(String model) {
-        this.model = model;
-    }
-
-    public String getLicensePlate() {
-        return licensePlate;
-    }
-
-    public void setLicensePlate(String licensePlate) {
-        this.licensePlate = licensePlate;
+    public void setOfficeId(Long officeId) {
+        this.officeId = officeId;
     }
 
     public Integer getYear() {
@@ -61,6 +60,14 @@ public class CarCreateRequest {
         this.year = year;
     }
 
+    public String getLicensePlate() {
+        return licensePlate;
+    }
+
+    public void setLicensePlate(String licensePlate) {
+        this.licensePlate = licensePlate;
+    }
+
     public String getFuelType() {
         return fuelType;
     }
@@ -69,20 +76,20 @@ public class CarCreateRequest {
         this.fuelType = fuelType;
     }
 
-    public BigDecimal getPricePerDay() {
-        return pricePerDay;
-    }
-
-    public void setPricePerDay(BigDecimal pricePerDay) {
-        this.pricePerDay = pricePerDay;
-    }
-
     public String getTransmission() {
         return transmission;
     }
 
     public void setTransmission(String transmission) {
         this.transmission = transmission;
+    }
+
+    public BigDecimal getPricePerDay() {
+        return pricePerDay;
+    }
+
+    public void setPricePerDay(BigDecimal pricePerDay) {
+        this.pricePerDay = pricePerDay;
     }
 
     public String getStatus() {
