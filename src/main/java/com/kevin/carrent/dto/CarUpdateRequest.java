@@ -7,41 +7,49 @@ import jakarta.validation.constraints.Positive;
 import java.math.BigDecimal;
 
 public class CarUpdateRequest {
-    @NotBlank
-    private String brand;
-    @NotBlank
-    private String model;
+
+    @NotNull
+    private Long carModelId;
+
+    @NotNull
+    private Long officeId;
+
     @NotNull
     private Integer year;
+
     @NotBlank
     private String licensePlate;
+
     @NotBlank
     private String fuelType;
+
     @NotBlank
     private String transmission;
+
     @NotNull
     @Positive
     private BigDecimal pricePerDay;
+
     @NotBlank
     private String status;
 
     public CarUpdateRequest() {
     }
 
-    public String getBrand() {
-        return brand;
+    public Long getCarModelId() {
+        return carModelId;
     }
 
-    public void setBrand(String brand) {
-        this.brand = brand;
+    public void setCarModelId(Long carModelId) {
+        this.carModelId = carModelId;
     }
 
-    public String getModel() {
-        return model;
+    public Long getOfficeId() {
+        return officeId;
     }
 
-    public void setModel(String model) {
-        this.model = model;
+    public void setOfficeId(Long officeId) {
+        this.officeId = officeId;
     }
 
     public Integer getYear() {
@@ -91,5 +99,4 @@ public class CarUpdateRequest {
     public void setStatus(String status) {
         this.status = status;
     }
-
 }
