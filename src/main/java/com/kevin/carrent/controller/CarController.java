@@ -57,4 +57,5 @@ public class CarController {
             @Valid @RequestBody CarUpdateRequest request) {
         return ResponseEntity.ok(carService.updateCar(id, request));
     }
+
 }
