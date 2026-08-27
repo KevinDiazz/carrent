@@ -8,6 +8,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
+
 @RestController
 @RequestMapping("/offices")
 public class OfficeController {
@@ -25,5 +27,23 @@ public class OfficeController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(officeService.createOffice(request));
+    }
+
+    @GetMapping
+    public ResponseEntity<List<OfficeResponse>> getOffices() {
+
+        return ResponseEntity
+                .ok(officeService.getAllOffices());
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteOffice(
+            @PathVariable Long id) {
+
+        officeService.deleteOffice(id);
+
+        return ResponseEntity
+                .noContent()
+                .build();
     }
 }

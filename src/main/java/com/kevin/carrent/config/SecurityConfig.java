@@ -34,10 +34,28 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/cars/**")
                         .hasAnyRole("USER", "ADMIN")
 
-                        .requestMatchers("/car-models/**")
+                        .requestMatchers(HttpMethod.GET, "/car-models/**")
+                        .hasAnyRole("USER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/car-models/**")
                         .hasRole("ADMIN")
 
-                        .requestMatchers("/offices/**")
+                        .requestMatchers(HttpMethod.PUT, "/car-models/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.DELETE, "/car-models/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/offices/**")
+                        .hasAnyRole("USER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.POST, "/offices/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.PUT, "/offices/**")
+                        .hasRole("ADMIN")
+
+                        .requestMatchers(HttpMethod.DELETE, "/offices/**")
                         .hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.POST, "/cars/**")
@@ -49,6 +67,13 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.DELETE, "/cars/**")
                         .hasRole("ADMIN")
 
+                        .requestMatchers(HttpMethod.POST, "/reservations/**")
+                        .hasAnyRole("USER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/reservations/**")
+                        .hasAnyRole("USER", "ADMIN")
+
+                        .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )
                 .exceptionHandling(exception -> exception
