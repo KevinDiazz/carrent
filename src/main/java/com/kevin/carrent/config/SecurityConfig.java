@@ -73,6 +73,9 @@ public class SecurityConfig {
                         .requestMatchers(HttpMethod.GET, "/reservations/**")
                         .hasAnyRole("USER", "ADMIN")
 
+                        .requestMatchers(HttpMethod.DELETE, "/reservations/**")
+                        .hasAnyRole("USER", "ADMIN")
+
                         .requestMatchers("/error").permitAll()
                         .anyRequest().authenticated()
                 )

@@ -36,4 +36,22 @@ public class ReservationController {
                 reservationService.getReservations()
         );
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ReservationResponse> getReservationById(
+            @PathVariable Long id) {
+
+        return ResponseEntity.ok(
+                reservationService.getReservationById(id)
+        );
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> cancelReservation(
+            @PathVariable Long id) {
+
+        reservationService.cancelReservation(id);
+
+        return ResponseEntity.noContent().build();
+    }
 }

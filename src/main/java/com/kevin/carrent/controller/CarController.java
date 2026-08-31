@@ -1,16 +1,17 @@
 package com.kevin.carrent.controller;
 
 import com.kevin.carrent.dto.CarCreateRequest;
+import com.kevin.carrent.dto.CarFilterRequest;
 import com.kevin.carrent.dto.CarResponse;
 import com.kevin.carrent.dto.CarUpdateRequest;
+import com.kevin.carrent.enums.CarStatus;
 import com.kevin.carrent.service.CarService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @RestController
@@ -23,10 +24,10 @@ public class CarController {
     }
 
     @GetMapping
-    public ResponseEntity<List<CarResponse>> getCars() {
-        return ResponseEntity
-                .status(HttpStatus.OK)
-                .body(carService.getCars());
+    public ResponseEntity<List<CarResponse>> getCars(
+            @ModelAttribute CarFilterRequest filter) {
+        return ResponseEntity.ok(
+                carService.getCars(filter));
     }
 
     @GetMapping("/{id}")

@@ -1,5 +1,7 @@
 package com.kevin.carrent.dto;
 
+import com.kevin.carrent.enums.CarStatus;
+
 import java.math.BigDecimal;
 
 public class CarResponse {
@@ -15,7 +17,7 @@ public class CarResponse {
     private final String fuelType;
     private final String transmission;
     private final BigDecimal pricePerDay;
-    private final String status;
+    private final CarStatus status;
 
     public CarResponse(
             Long id,
@@ -29,7 +31,7 @@ public class CarResponse {
             String fuelType,
             String transmission,
             BigDecimal pricePerDay,
-            String status) {
+            CarStatus status) {
 
         this.id = id;
         this.carModelId = carModelId;
@@ -89,7 +91,7 @@ public class CarResponse {
         return pricePerDay;
     }
 
-    public String getStatus() {
+    public CarStatus getStatus() {
         return status;
     }
 }

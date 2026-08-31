@@ -1,5 +1,6 @@
 package com.kevin.carrent.entity;
 
+import com.kevin.carrent.enums.CarStatus;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -22,8 +23,9 @@ public class Car {
     private String transmission;
     @Column(nullable = false)
     private BigDecimal pricePerDay;
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false)
-    private String status;
+    private CarStatus status;
     @ManyToOne
     @JoinColumn(name = "office_id", nullable = false)
     private Office office;
@@ -75,11 +77,11 @@ public class Car {
         this.pricePerDay = pricePerDay;
     }
 
-    public String getStatus() {
+    public CarStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(CarStatus status) {
         this.status = status;
     }
 
