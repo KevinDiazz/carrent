@@ -2,6 +2,7 @@ package com.kevin.carrent.service;
 
 import com.kevin.carrent.dto.OfficeCreateRequest;
 import com.kevin.carrent.dto.OfficeResponse;
+import com.kevin.carrent.dto.OfficeUpdateRequest;
 import com.kevin.carrent.entity.Office;
 import com.kevin.carrent.exception.OfficeInUseException;
 import com.kevin.carrent.exception.OfficeNotFoundException;
@@ -40,6 +41,23 @@ public class OfficeService {
     public List<OfficeResponse> getAllOffices() {
         List<Office> offices = officeRepository.findAll();
         return offices.stream().map(officeMapper::toResponse).toList();
+    }
+
+    public OfficeResponse updateOffice(
+            Long id,
+            OfficeUpdateRequest request) {
+
+        Office office = officeRepository.findById(id)
+                .orElseThrow(() ->
+                        new OfficeNotFoundException(
+                                "Office with id " + id + " not found"
+                        ));
+
+        officeMapper.updateEntity(request, office);
+
+        Office updatedOffice = officeRepository.save(office);
+
+        return officeMapper.toResponse(updatedOffice);
     }
 
     public void deleteOffice(Long id) {

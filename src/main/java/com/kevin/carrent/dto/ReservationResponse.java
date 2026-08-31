@@ -1,5 +1,7 @@
 package com.kevin.carrent.dto;
 
+import com.kevin.carrent.enums.ReservationStatus;
+
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -19,6 +21,7 @@ public class ReservationResponse {
     private final BigDecimal totalPrice;
     private final LocalTime pickupTime;
     private final LocalTime returnTime;
+    private final ReservationStatus status;
 
     public ReservationResponse(
             Long id,
@@ -29,7 +32,7 @@ public class ReservationResponse {
             String brand,
             String model,
             LocalDate startDate,
-            LocalDate endDate, BigDecimal totalPrice, LocalTime pickupTime, LocalTime returnTime) {
+            LocalDate endDate, BigDecimal totalPrice, LocalTime pickupTime, LocalTime returnTime, ReservationStatus status) {
 
         this.id = id;
         this.userId = userId;
@@ -43,6 +46,7 @@ public class ReservationResponse {
         this.totalPrice = totalPrice;
         this.pickupTime = pickupTime;
         this.returnTime = returnTime;
+        this.status = status;
     }
 
     public Long getId() {
@@ -91,5 +95,9 @@ public class ReservationResponse {
 
     public BigDecimal getTotalPrice() {
         return totalPrice;
+    }
+
+    public ReservationStatus getStatus() {
+        return status;
     }
 }

@@ -1,11 +1,13 @@
 package com.kevin.carrent.service;
 
 import com.kevin.carrent.dto.CarCreateRequest;
+import com.kevin.carrent.dto.CarFilterRequest;
 import com.kevin.carrent.dto.CarResponse;
 import com.kevin.carrent.dto.CarUpdateRequest;
 import com.kevin.carrent.entity.Car;
 import com.kevin.carrent.entity.CarModel;
 import com.kevin.carrent.entity.Office;
+import com.kevin.carrent.enums.CarStatus;
 import com.kevin.carrent.exception.CarModelNotFoundException;
 import com.kevin.carrent.exception.LicensePlateAlreadyExistsException;
 import com.kevin.carrent.exception.OfficeNotFoundException;
@@ -13,9 +15,12 @@ import com.kevin.carrent.mapper.CarMapper;
 import com.kevin.carrent.repository.CarModelRepository;
 import com.kevin.carrent.repository.CarRepository;
 import com.kevin.carrent.repository.OfficeRepository;
+import com.kevin.carrent.specification.CarSpecification;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import com.kevin.carrent.exception.CarNotFoundException;
 
+import java.math.BigDecimal;
 import java.util.List;
 
 @Service
@@ -50,8 +55,10 @@ public class CarService {
         return carMapper.toResponse(savedCar);
     }
 
-    public List<CarResponse> getCars() {
-        List<Car> cars = carRepository.findAll();
+    public List<CarResponse> getCars(CarFilterRequest filter) {
+        Specification<Car> specification = CarSpecification.filter(filter);
+
+        List<Car> cars = carRepository.findAll(specification);
         return cars.stream().map(carMapper::toResponse).toList();
     }
 

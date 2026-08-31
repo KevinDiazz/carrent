@@ -2,6 +2,7 @@ package com.kevin.carrent.controller;
 
 import com.kevin.carrent.dto.OfficeCreateRequest;
 import com.kevin.carrent.dto.OfficeResponse;
+import com.kevin.carrent.dto.OfficeUpdateRequest;
 import com.kevin.carrent.service.OfficeService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
@@ -34,6 +35,16 @@ public class OfficeController {
 
         return ResponseEntity
                 .ok(officeService.getAllOffices());
+    }
+
+    @PutMapping("/{id}")
+    public ResponseEntity<OfficeResponse> updateOffice(
+            @PathVariable Long id,
+            @Valid @RequestBody OfficeUpdateRequest request) {
+
+        return ResponseEntity.ok(
+                officeService.updateOffice(id, request)
+        );
     }
 
     @DeleteMapping("/{id}")

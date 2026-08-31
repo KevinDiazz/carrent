@@ -5,14 +5,13 @@ import com.kevin.carrent.dto.ReservationResponse;
 import com.kevin.carrent.entity.Car;
 import com.kevin.carrent.entity.Reservations;
 import com.kevin.carrent.entity.User;
+import com.kevin.carrent.enums.CarStatus;
+import com.kevin.carrent.enums.ReservationStatus;
 import com.kevin.carrent.enums.Role;
-import com.kevin.carrent.exception.CarNotFoundException;
-import com.kevin.carrent.exception.ReservationDateException;
-import com.kevin.carrent.exception.CarNotAvailableException;
+import com.kevin.carrent.exception.*;
 import com.kevin.carrent.mapper.ReservationMapper;
 import com.kevin.carrent.repository.CarRepository;
 import com.kevin.carrent.repository.ReservationRepository;
-import com.kevin.carrent.repository.UserRepository;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
@@ -31,7 +30,6 @@ public class ReservationService {
     public ReservationService(
             ReservationRepository reservationRepository,
             CarRepository carRepository,
-            UserRepository userRepository,
             ReservationMapper reservationMapper) {
 
         this.reservationRepository = reservationRepository;
@@ -54,11 +52,17 @@ public class ReservationService {
                                 "Car with id " + request.getCarId()
                                         + " not found"
                         ));
+        if (car.getStatus() != CarStatus.AVAILABLE) {
+            throw new CarNotAvailableException(
+                    "Car with id " + car.getId() + " is not available"
+            );
+        }
 
         boolean carIsReserved =
                 reservationRepository
-                        .existsByCarIdAndStartDateLessThanAndEndDateGreaterThan(
+                        .existsByCarIdAndStatusAndStartDateLessThanAndEndDateGreaterThan(
                                 car.getId(),
+                                ReservationStatus.CONFIRMED,
                                 request.getEndDate(),
                                 request.getStartDate()
                         );
@@ -96,6 +100,7 @@ public class ReservationService {
         reservation.setPickupTime(request.getPickupTime());
         reservation.setReturnTime(request.getReturnTime());
         reservation.setTotalPrice(totalPrice);
+        reservation.setStatus(ReservationStatus.CONFIRMED);
         Reservations savedReservation =
                 reservationRepository.save(reservation);
 
@@ -122,5 +127,64 @@ public class ReservationService {
         return reservations.stream()
                 .map(reservationMapper::toResponse)
                 .toList();
+    }
+
+    public ReservationResponse getReservationById(Long id) {
+
+        Reservations reservation = reservationRepository.findById(id)
+                .orElseThrow(() ->
+                        new ReservationNotFoundException(
+                                "Reservation with id " + id + " not found"
+                        ));
+
+        Authentication authentication = SecurityContextHolder
+                .getContext()
+                .getAuthentication();
+
+        User user = (User) authentication.getPrincipal();
+
+        if (user.getRole() != Role.ADMIN
+                && !reservation.getUser().getId().equals(user.getId())) {
+
+            throw new ReservationAccessDeniedException(
+                    "You do not have permission to access this reservation"
+            );
+        }
+
+        return reservationMapper.toResponse(reservation);
+    }
+
+    public void cancelReservation(Long id) {
+
+        Reservations reservation = reservationRepository.findById(id)
+                .orElseThrow(() ->
+                        new ReservationNotFoundException(
+                                "Reservation with id " + id + " not found"
+                        ));
+
+        Authentication authentication =
+                SecurityContextHolder
+                        .getContext()
+                        .getAuthentication();
+
+        User user = (User) authentication.getPrincipal();
+
+        if (user.getRole() != Role.ADMIN
+                && !reservation.getUser().getId().equals(user.getId())) {
+
+            throw new ReservationAccessDeniedException(
+                    "You do not have permission to cancel this reservation"
+            );
+        }
+
+        if (reservation.getStatus() == ReservationStatus.CANCELLED) {
+            throw new ReservationAlreadyCancelledException(
+                    "Reservation with id " + id + " is already cancelled"
+            );
+        }
+
+        reservation.setStatus(ReservationStatus.CANCELLED);
+
+        reservationRepository.save(reservation);
     }
 }

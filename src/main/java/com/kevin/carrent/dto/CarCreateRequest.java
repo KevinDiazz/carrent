@@ -1,5 +1,6 @@
 package com.kevin.carrent.dto;
 
+import com.kevin.carrent.enums.CarStatus;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -30,8 +31,8 @@ public class CarCreateRequest {
     @Positive
     private BigDecimal pricePerDay;
 
-    @NotBlank
-    private String status;
+    @NotNull
+    private CarStatus status;
 
     public CarCreateRequest() {
     }
@@ -92,11 +93,11 @@ public class CarCreateRequest {
         this.pricePerDay = pricePerDay;
     }
 
-    public String getStatus() {
+    public CarStatus getStatus() {
         return status;
     }
 
-    public void setStatus(String status) {
+    public void setStatus(CarStatus status) {
         this.status = status;
     }
 }

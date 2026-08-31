@@ -1,5 +1,6 @@
 package com.kevin.carrent.entity;
 
+import com.kevin.carrent.enums.ReservationStatus;
 import jakarta.persistence.*;
 
 import java.math.BigDecimal;
@@ -36,6 +37,10 @@ public class Reservations {
 
     @Column(nullable = false)
     private LocalTime returnTime;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false)
+    private ReservationStatus status;
 
     public Reservations() {
     }
@@ -102,5 +107,13 @@ public class Reservations {
 
     public void setReturnTime(LocalTime returnTime) {
         this.returnTime = returnTime;
+    }
+
+    public ReservationStatus getStatus() {
+        return status;
+    }
+
+    public void setStatus(ReservationStatus status) {
+        this.status = status;
     }
 }
