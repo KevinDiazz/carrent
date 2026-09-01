@@ -1,9 +1,6 @@
 package com.kevin.carrent.controller;
 
-import com.kevin.carrent.dto.CarCreateRequest;
-import com.kevin.carrent.dto.CarFilterRequest;
-import com.kevin.carrent.dto.CarResponse;
-import com.kevin.carrent.dto.CarUpdateRequest;
+import com.kevin.carrent.dto.*;
 import com.kevin.carrent.enums.CarStatus;
 import com.kevin.carrent.service.CarService;
 import jakarta.validation.Valid;
@@ -12,6 +9,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
 
 @RestController
@@ -41,6 +39,21 @@ public class CarController {
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(carService.createCar(car));
+    }
+
+    @GetMapping("/available")
+    public ResponseEntity<List<CarAvailabilityResponse>> getAvailableCars(
+            @RequestParam LocalDate startDate,
+            @RequestParam LocalDate endDate,
+            @RequestParam Long officeId) {
+
+        return ResponseEntity.ok(
+                carService.getAvailableCars(
+                        startDate,
+                        endDate,
+                        officeId
+                )
+        );
     }
 
     @DeleteMapping("/{id}")

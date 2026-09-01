@@ -1,16 +1,11 @@
 package com.kevin.carrent.service;
 
-import com.kevin.carrent.dto.CarCreateRequest;
-import com.kevin.carrent.dto.CarFilterRequest;
-import com.kevin.carrent.dto.CarResponse;
-import com.kevin.carrent.dto.CarUpdateRequest;
+import com.kevin.carrent.dto.*;
 import com.kevin.carrent.entity.Car;
 import com.kevin.carrent.entity.CarModel;
 import com.kevin.carrent.entity.Office;
 import com.kevin.carrent.enums.CarStatus;
-import com.kevin.carrent.exception.CarModelNotFoundException;
-import com.kevin.carrent.exception.LicensePlateAlreadyExistsException;
-import com.kevin.carrent.exception.OfficeNotFoundException;
+import com.kevin.carrent.exception.*;
 import com.kevin.carrent.mapper.CarMapper;
 import com.kevin.carrent.repository.CarModelRepository;
 import com.kevin.carrent.repository.CarRepository;
@@ -18,10 +13,11 @@ import com.kevin.carrent.repository.OfficeRepository;
 import com.kevin.carrent.specification.CarSpecification;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
-import com.kevin.carrent.exception.CarNotFoundException;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 public class CarService {
@@ -92,5 +88,53 @@ public class CarService {
 
         Car updatedCar = carRepository.save(car);
         return carMapper.toResponse(updatedCar);
+    }
+
+    public List<CarAvailabilityResponse> getAvailableCars(
+            LocalDate startDate,
+            LocalDate endDate,
+            Long officeId) {
+
+        if (!startDate.isBefore(endDate)) {
+            throw new ReservationDateException(
+                    "Start date must be before end date"
+            );
+        }
+
+        Specification<Car> specification =
+                CarSpecification.availableCars(
+                        startDate,
+                        endDate,
+                        officeId
+                );
+
+        List<Car> cars = carRepository.findAll(specification);
+
+        return cars.stream()
+                .collect(Collectors.groupingBy(
+                        car -> new CarAvailabilityKey(
+                                car.getCarModel().getId(),
+                                car.getFuelType(),
+                                car.getTransmission(),
+                                car.getPricePerDay()
+                        )
+                ))
+                .values()
+                .stream()
+                .map(carsByVariant -> {
+
+                    Car firstCar = carsByVariant.get(0);
+
+                    return new CarAvailabilityResponse(
+                            firstCar.getCarModel().getId(),
+                            firstCar.getCarModel().getBrand(),
+                            firstCar.getCarModel().getModel(),
+                            firstCar.getFuelType(),
+                            firstCar.getTransmission(),
+                            firstCar.getPricePerDay(),
+                            (long) carsByVariant.size()
+                    );
+                })
+                .toList();
     }
 }

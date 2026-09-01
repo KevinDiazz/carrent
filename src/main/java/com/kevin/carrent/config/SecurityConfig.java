@@ -31,8 +31,11 @@ public class SecurityConfig {
                 .csrf(AbstractHttpConfigurer::disable)
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/cars/**")
+                        .requestMatchers(HttpMethod.GET, "/cars/available")
                         .hasAnyRole("USER", "ADMIN")
+
+                        .requestMatchers(HttpMethod.GET, "/cars/**")
+                        .hasRole("ADMIN")
 
                         .requestMatchers(HttpMethod.GET, "/car-models/**")
                         .hasAnyRole("USER", "ADMIN")
