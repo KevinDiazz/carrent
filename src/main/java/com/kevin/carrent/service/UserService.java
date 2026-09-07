@@ -1,9 +1,7 @@
 package com.kevin.carrent.service;
 
-import com.kevin.carrent.dto.LoginRequest;
-import com.kevin.carrent.dto.LoginResponse;
-import com.kevin.carrent.dto.RegisterRequest;
-import com.kevin.carrent.dto.RegisterResponse;
+import com.kevin.carrent.dto.*;
+import com.kevin.carrent.entity.RefreshToken;
 import com.kevin.carrent.entity.User;
 import com.kevin.carrent.enums.Role;
 import com.kevin.carrent.exception.EmailAlreadyExistsException;
@@ -20,12 +18,14 @@ public class UserService {
     private final PasswordEncoder passwordEncoder;
     private final UserMapper userMapper;
     private final JwtService jwtService;
+    private final RefreshTokenService refreshTokenService;
 
-    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, JwtService jwtService) {
+    public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, UserMapper userMapper, JwtService jwtService, RefreshTokenService refreshTokenService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.userMapper = userMapper;
         this.jwtService = jwtService;
+        this.refreshTokenService = refreshTokenService;
     }
 
     public RegisterResponse registerUser(RegisterRequest request) {
@@ -39,7 +39,7 @@ public class UserService {
         return userMapper.toResponse(savedUser);
     }
 
-    public LoginResponse login(@Valid LoginRequest request) {
+    public LoginResult login(@Valid LoginRequest request) {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() ->
                         new InvalidCredentialsException("Invalid email or password"));
@@ -52,10 +52,13 @@ public class UserService {
                     "Invalid email or password"
             );
         }
-        String token = jwtService.generateToken(user);
+        String accessToken = jwtService.generateToken(user);
 
-        return new LoginResponse(
-                token,
+        RefreshToken refreshToken = refreshTokenService.create(user);
+
+        return new LoginResult(
+                accessToken,
+                refreshToken.getToken(),
                 user.getEmail(),
                 user.getRole()
         );

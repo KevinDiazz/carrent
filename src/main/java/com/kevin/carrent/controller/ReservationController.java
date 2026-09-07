@@ -23,7 +23,7 @@ public class ReservationController {
     @PostMapping
     public ResponseEntity<ReservationResponse> createReservation(
             @Valid @RequestBody ReservationCreateRequest request) {
-
+        System.out.println("ENTRÓ EN CREATE RESERVATION");
         return ResponseEntity
                 .status(HttpStatus.CREATED)
                 .body(reservationService.createReservation(request));
