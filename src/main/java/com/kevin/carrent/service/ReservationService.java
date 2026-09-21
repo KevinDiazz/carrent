@@ -37,8 +37,7 @@ public class ReservationService {
         this.reservationMapper = reservationMapper;
     }
 
-    public ReservationResponse createReservation(
-            ReservationCreateRequest request) {
+    public ReservationResponse createReservation(ReservationCreateRequest request) {
 
         if (!request.getStartDate().isBefore(request.getEndDate())) {
             throw new ReservationDateException(
@@ -46,33 +45,23 @@ public class ReservationService {
             );
         }
 
-        Car car = carRepository.findById(request.getCarId())
-                .orElseThrow(() ->
-                        new CarNotFoundException(
-                                "Car with id " + request.getCarId()
-                                        + " not found"
-                        ));
-        if (car.getStatus() != CarStatus.AVAILABLE) {
+        List<Car> availableCars =
+                carRepository.findAvailableCarsForReservation(
+                        request.getCarModelId(),
+                        request.getOfficeId(),
+                        request.getFuelType(),
+                        request.getTransmission(),
+                        request.getStartDate(),
+                        request.getEndDate()
+                );
+
+        if (availableCars.isEmpty()) {
             throw new CarNotAvailableException(
-                    "Car with id " + car.getId() + " is not available"
+                    "No cars available for the selected configuration and dates"
             );
         }
 
-        boolean carIsReserved =
-                reservationRepository
-                        .existsByCarIdAndStatusAndStartDateLessThanAndEndDateGreaterThan(
-                                car.getId(),
-                                ReservationStatus.CONFIRMED,
-                                request.getEndDate(),
-                                request.getStartDate()
-                        );
-
-        if (carIsReserved) {
-            throw new CarNotAvailableException(
-                    "Car with id " + car.getId()
-                            + " is not available for the selected dates"
-            );
-        }
+        Car car = availableCars.get(0);
 
         Authentication authentication =
                 SecurityContextHolder
@@ -80,7 +69,6 @@ public class ReservationService {
                         .getAuthentication();
 
         User user = (User) authentication.getPrincipal();
-
 
         long days = ChronoUnit.DAYS.between(
                 request.getStartDate(),
@@ -101,6 +89,7 @@ public class ReservationService {
         reservation.setReturnTime(request.getReturnTime());
         reservation.setTotalPrice(totalPrice);
         reservation.setStatus(ReservationStatus.CONFIRMED);
+
         Reservations savedReservation =
                 reservationRepository.save(reservation);
 

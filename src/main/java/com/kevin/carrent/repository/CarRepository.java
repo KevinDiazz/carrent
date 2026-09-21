@@ -20,7 +20,7 @@ public interface CarRepository extends JpaRepository<Car, Long>, JpaSpecificatio
 
     boolean existsByOfficeId(Long officeId);
 
-    @Query("""
+/*    @Query("""
             SELECT c
             FROM Car c
             WHERE c.status = com.kevin.carrent.enums.CarStatus.AVAILABLE
@@ -34,6 +34,32 @@ public interface CarRepository extends JpaRepository<Car, Long>, JpaSpecificatio
             )
             """)
     List<Car> findAvailableCars(
+            @Param("startDate") LocalDate startDate,
+            @Param("endDate") LocalDate endDate
+    );*/
+
+    @Query("""
+            SELECT c
+            FROM Car c
+            WHERE c.carModel.id = :carModelId
+            AND c.office.id = :officeId
+            AND c.fuelType = :fuelType
+            AND c.transmission = :transmission
+            AND c.status = com.kevin.carrent.enums.CarStatus.AVAILABLE
+            AND NOT EXISTS (
+                SELECT r
+                FROM Reservations r
+                WHERE r.car.id = c.id
+                AND r.status = com.kevin.carrent.enums.ReservationStatus.CONFIRMED
+                AND r.startDate < :endDate
+                AND r.endDate > :startDate
+            )
+            """)
+    List<Car> findAvailableCarsForReservation(
+            @Param("carModelId") Long carModelId,
+            @Param("officeId") Long officeId,
+            @Param("fuelType") String fuelType,
+            @Param("transmission") String transmission,
             @Param("startDate") LocalDate startDate,
             @Param("endDate") LocalDate endDate
     );

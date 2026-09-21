@@ -1,6 +1,7 @@
 package com.kevin.carrent.dto;
 
 import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
 
 import java.time.LocalDate;
@@ -9,10 +10,19 @@ import java.time.LocalTime;
 public class ReservationCreateRequest {
 
     @NotNull
-    private Long carId;
+    private Long carModelId;
 
     @NotNull
-    @Future
+    private Long officeId;
+
+    @NotNull
+    private String fuelType;
+
+    @NotNull
+    private String transmission;
+
+    @NotNull
+    @FutureOrPresent
     private LocalDate startDate;
 
     @NotNull
@@ -28,12 +38,36 @@ public class ReservationCreateRequest {
     public ReservationCreateRequest() {
     }
 
-    public Long getCarId() {
-        return carId;
+    public Long getCarModelId() {
+        return carModelId;
     }
 
-    public void setCarId(Long carId) {
-        this.carId = carId;
+    public void setCarModelId(Long carModelId) {
+        this.carModelId = carModelId;
+    }
+
+    public Long getOfficeId() {
+        return officeId;
+    }
+
+    public void setOfficeId(Long officeId) {
+        this.officeId = officeId;
+    }
+
+    public String getFuelType() {
+        return fuelType;
+    }
+
+    public void setFuelType(String fuelType) {
+        this.fuelType = fuelType;
+    }
+
+    public String getTransmission() {
+        return transmission;
+    }
+
+    public void setTransmission(String transmission) {
+        this.transmission = transmission;
     }
 
     public LocalDate getStartDate() {
