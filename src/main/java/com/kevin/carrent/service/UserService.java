@@ -60,7 +60,8 @@ public class UserService {
                 accessToken,
                 refreshToken.getToken(),
                 user.getEmail(),
-                user.getRole()
+                user.getRole(),
+                user.getName()
         );
     }
 }

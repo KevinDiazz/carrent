@@ -6,10 +6,12 @@ public class LoginResponse {
 
     private final String email;
     private final Role role;
+    private final String name;
 
-    public LoginResponse(String email, Role role) {
+    public LoginResponse(String email, Role role, String name) {
         this.email = email;
         this.role = role;
+        this.name = name;
     }
 
     public String getEmail() {
@@ -18,5 +20,9 @@ public class LoginResponse {
 
     public Role getRole() {
         return role;
+    }
+
+    public String getName() {
+        return name;
     }
 }

@@ -14,5 +14,10 @@ public interface ReservationMapper {
     @Mapping(target = "licensePlate", source = "car.licensePlate")
     @Mapping(target = "brand", source = "car.carModel.brand")
     @Mapping(target = "model", source = "car.carModel.model")
+    @Mapping(target = "officeName", source = "car.office.name")
+    @Mapping(target = "officeId", source = "car.office.id")
+    @Mapping(target = "officeAddress", source = "car.office.address")
+    @Mapping(target = "officeCity", source = "car.office.city")
+    @Mapping(target = "officePhone", source = "car.office.phone")
     ReservationResponse toResponse(Reservations reservation);
 }

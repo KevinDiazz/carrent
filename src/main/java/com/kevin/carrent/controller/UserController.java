@@ -17,6 +17,8 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.ResponseCookie;
 
 @RestController
 @RequestMapping("/auth")
@@ -25,6 +27,25 @@ public class UserController {
     private final RefreshTokenService refreshTokenService;
     private final JwtService jwtService;
     private final RefreshTokenRepository refreshTokenRepository;
+    @Value("${app.cookie-secure}")
+    private boolean cookieSecure;
+
+    @Value("${app.cookie-same-site}")
+    private String cookieSameSite;
+
+    private ResponseCookie createAuthCookie(
+            String name,
+            String value,
+            long maxAge
+    ) {
+        return ResponseCookie.from(name, value)
+                .httpOnly(true)
+                .secure(cookieSecure)
+                .path("/")
+                .sameSite(cookieSameSite)
+                .maxAge(maxAge)
+                .build();
+    }
 
     public UserController(UserService userService, RefreshTokenService refreshTokenService, JwtService jwtService, RefreshTokenRepository refreshTokenRepository) {
         this.userService = userService;
@@ -47,29 +68,24 @@ public class UserController {
     ) {
         LoginResult loginResult = userService.login(request);
 
-        Cookie cookie = new Cookie(
+        ResponseCookie accessCookie = createAuthCookie(
                 "access_token",
-                loginResult.getAccessToken()
+                loginResult.getAccessToken(),
+                15 * 60
         );
 
-        cookie.setHttpOnly(true);
-        cookie.setPath("/");
-        cookie.setSecure(false);
-
-        response.addCookie(cookie);
-        Cookie refreshCookie = new Cookie(
+        ResponseCookie refreshCookie = createAuthCookie(
                 "refresh_token",
-                loginResult.getRefreshToken()
+                loginResult.getRefreshToken(),
+                7 * 24 * 60 * 60
         );
 
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setPath("/");
-        refreshCookie.setSecure(false);
-
-        response.addCookie(refreshCookie);
+        response.addHeader("Set-Cookie", accessCookie.toString());
+        response.addHeader("Set-Cookie", refreshCookie.toString());
         LoginResponse loginResponse = new LoginResponse(
                 loginResult.getEmail(),
-                loginResult.getRole()
+                loginResult.getRole(),
+                loginResult.getName()
         );
 
         return ResponseEntity.ok(loginResponse);
@@ -95,23 +111,20 @@ public class UserController {
                 }
             }
         }
+        ResponseCookie accessCookie = createAuthCookie(
+                "access_token",
+                "",
+                0
+        );
 
-        Cookie accessCookie = new Cookie("access_token", null);
-        accessCookie.setHttpOnly(true);
-        accessCookie.setPath("/");
-        accessCookie.setSecure(false);
-        accessCookie.setMaxAge(0);
+        ResponseCookie refreshCookie = createAuthCookie(
+                "refresh_token",
+                "",
+                0
+        );
 
-        response.addCookie(accessCookie);
-
-
-        Cookie refreshCookie = new Cookie("refresh_token", null);
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setPath("/");
-        refreshCookie.setSecure(false);
-        refreshCookie.setMaxAge(0);
-
-        response.addCookie(refreshCookie);
+        response.addHeader("Set-Cookie", accessCookie.toString());
+        response.addHeader("Set-Cookie", refreshCookie.toString());
 
         return ResponseEntity.noContent().build();
     }
@@ -150,31 +163,25 @@ public class UserController {
         RefreshToken newRefreshToken =
                 refreshTokenService.rotate(currentRefreshToken);
 
-        Cookie accessCookie = new Cookie(
+        ResponseCookie accessCookie = createAuthCookie(
                 "access_token",
-                accessToken
+                accessToken,
+                15 * 60
         );
 
-        accessCookie.setHttpOnly(true);
-        accessCookie.setPath("/");
-        accessCookie.setSecure(false);
-
-        response.addCookie(accessCookie);
-
-        Cookie refreshCookie = new Cookie(
+        ResponseCookie refreshCookie = createAuthCookie(
                 "refresh_token",
-                newRefreshToken.getToken()
+                newRefreshToken.getToken(),
+                7 * 24 * 60 * 60
         );
 
-        refreshCookie.setHttpOnly(true);
-        refreshCookie.setPath("/");
-        refreshCookie.setSecure(false);
-
-        response.addCookie(refreshCookie);
+        response.addHeader("Set-Cookie", accessCookie.toString());
+        response.addHeader("Set-Cookie", refreshCookie.toString());
 
         LoginResponse loginResponse = new LoginResponse(
                 user.getEmail(),
-                user.getRole()
+                user.getRole(),
+                user.getName()
         );
 
         return ResponseEntity.ok(loginResponse);

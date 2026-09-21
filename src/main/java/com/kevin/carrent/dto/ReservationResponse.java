@@ -12,10 +12,18 @@ public class ReservationResponse {
 
     private final Long userId;
     private final String userName;
+
     private final Long carId;
     private final String licensePlate;
     private final String brand;
     private final String model;
+
+    private final Long officeId;
+    private final String officeName;
+    private final String officeAddress;
+    private final String officeCity;
+    private final String officePhone;
+
     private final LocalDate startDate;
     private final LocalDate endDate;
     private final BigDecimal totalPrice;
@@ -31,8 +39,17 @@ public class ReservationResponse {
             String licensePlate,
             String brand,
             String model,
+            Long officeId,
+            String officeName,
+            String officeAddress,
+            String officeCity,
+            String officePhone,
             LocalDate startDate,
-            LocalDate endDate, BigDecimal totalPrice, LocalTime pickupTime, LocalTime returnTime, ReservationStatus status) {
+            LocalDate endDate,
+            BigDecimal totalPrice,
+            LocalTime pickupTime,
+            LocalTime returnTime,
+            ReservationStatus status) {
 
         this.id = id;
         this.userId = userId;
@@ -41,6 +58,11 @@ public class ReservationResponse {
         this.licensePlate = licensePlate;
         this.brand = brand;
         this.model = model;
+        this.officeId = officeId;
+        this.officeName = officeName;
+        this.officeAddress = officeAddress;
+        this.officeCity = officeCity;
+        this.officePhone = officePhone;
         this.startDate = startDate;
         this.endDate = endDate;
         this.totalPrice = totalPrice;
@@ -75,6 +97,26 @@ public class ReservationResponse {
 
     public String getModel() {
         return model;
+    }
+
+    public Long getOfficeId() {
+        return officeId;
+    }
+
+    public String getOfficeName() {
+        return officeName;
+    }
+
+    public String getOfficeAddress() {
+        return officeAddress;
+    }
+
+    public String getOfficeCity() {
+        return officeCity;
+    }
+
+    public String getOfficePhone() {
+        return officePhone;
     }
 
     public LocalDate getStartDate() {
