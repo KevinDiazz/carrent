@@ -2,11 +2,12 @@ name: Keep backend and database warm
 
 on:
   schedule:
-    # Every 10 minutes. Render free tier spins down after 15 min of
-    # inactivity and the Aiven trial DB pauses similarly, so this hits a
-    # DB-backed endpoint often enough that neither ever goes cold during
-    # normal hours.
-    - cron: '*/10 * * * *'
+    # Every 10 minutes, offset from round numbers (:00, :10, :20...)
+    # because GitHub Actions scheduled runs queue up and get delayed the
+    # most right at those times. Render free tier spins down after 15 min
+    # of inactivity and the Aiven trial DB pauses similarly, so this hits
+    # a DB-backed endpoint often enough that neither ever goes cold.
+    - cron: '4,14,24,34,44,54 * * * *'
   workflow_dispatch: {}
 
 jobs:
