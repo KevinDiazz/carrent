@@ -13,7 +13,6 @@ import com.kevin.carrent.mapper.UserMapper;
 import com.kevin.carrent.repository.UserRepository;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -22,17 +21,13 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.Instant;
 import java.util.Optional;
 
-import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.*;
+
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
-
     @Mock
     private UserRepository userRepository;
 
@@ -51,105 +46,195 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
-    private User buildStoredUser(String email, String encodedPassword) {
+    @Test
+    void shouldRegisterUserWhenEmailDoesNotExist() {
+        // Arrange
+        RegisterRequest request = new RegisterRequest();
+        request.setName("Kevin");
+        request.setEmail("test@test.com");
+        request.setPassword("12345678");
+
         User user = new User();
-        user.setName("Test User");
-        user.setEmail(email);
-        user.setPassword(encodedPassword);
+
+        RegisterResponse response = new RegisterResponse(
+                "Kevin",
+                "test@test.com",
+                Role.USER
+        );
+
+        when(userRepository.findByEmail("test@test.com"))
+                .thenReturn(Optional.empty());
+
+        when(userMapper.toEntity(request))
+                .thenReturn(user);
+
+        when(passwordEncoder.encode("12345678"))
+                .thenReturn("hashedPassword");
+
+        when(userRepository.save(user))
+                .thenReturn(user);
+
+        when(userMapper.toResponse(user))
+                .thenReturn(response);
+
+        // Act
+        RegisterResponse result = userService.registerUser(request);
+
+        // Assert
+        assertEquals(response, result);
+        verify(userRepository).findByEmail("test@test.com");
+        verify(userMapper).toEntity(request);
+        verify(passwordEncoder).encode("12345678");
+        verify(userRepository).save(user);
+        verify(userMapper).toResponse(user);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenEmailAlreadyExists() {
+
+        // Arrange
+        RegisterRequest request = new RegisterRequest();
+        request.setName("Kevin");
+        request.setEmail("test@test.com");
+        request.setPassword("12345678");
+
+        User existingUser = new User();
+
+        when(userRepository.findByEmail("test@test.com"))
+                .thenReturn(Optional.of(existingUser));
+
+        // Act + Assert
+        assertThrows(
+                EmailAlreadyExistsException.class,
+                () -> userService.registerUser(request)
+        );
+        verify(userMapper, never()).toEntity(request);
+
+        verify(passwordEncoder, never()).encode("12345678");
+
+        verify(userRepository, never()).save(any(User.class));
+    }
+
+    @Test
+    void shouldLoginSuccessfully() {
+
+        // Arrange
+        LoginRequest request = new LoginRequest();
+        request.setEmail("test@test.com");
+        request.setPassword("12345678");
+
+        User user = new User();
+        user.setEmail("test@test.com");
+        user.setPassword("hashedPassword");
         user.setRole(Role.USER);
-        return user;
-    }
+        user.setName("Kevin");
 
-    @Test
-    void registerUser_shouldThrow_whenEmailAlreadyExists() {
-        RegisterRequest request = new RegisterRequest();
-        request.setName("Kevin");
-        request.setEmail("kevin@test.com");
-        request.setPassword("password123");
+        RefreshToken refreshToken = new RefreshToken(
+                "refresh-token",
+                user,
+                Instant.now().plusSeconds(3600)
+        );
 
-        when(userRepository.findByEmail("kevin@test.com"))
-                .thenReturn(Optional.of(buildStoredUser("kevin@test.com", "hash")));
+        LoginResult expected = new LoginResult(
+                "access-token",
+                "refresh-token",
+                "test@test.com",
+                Role.USER,
+                "Kevin"
+        );
 
-        assertThatThrownBy(() -> userService.registerUser(request))
-                .isInstanceOf(EmailAlreadyExistsException.class);
+        when(userRepository.findByEmail("test@test.com"))
+                .thenReturn(Optional.of(user));
 
-        verify(userRepository, never()).save(any());
-    }
+        when(passwordEncoder.matches("12345678", "hashedPassword"))
+                .thenReturn(true);
 
-    @Test
-    void registerUser_shouldEncodePasswordAndAssignUserRole() {
-        RegisterRequest request = new RegisterRequest();
-        request.setName("Kevin");
-        request.setEmail("kevin@test.com");
-        request.setPassword("plainPassword");
+        when(jwtService.generateToken(user))
+                .thenReturn("access-token");
 
-        User mappedUser = new User();
-        mappedUser.setName("Kevin");
-        mappedUser.setEmail("kevin@test.com");
+        when(refreshTokenService.create(user))
+                .thenReturn(refreshToken);
 
-        when(userRepository.findByEmail("kevin@test.com")).thenReturn(Optional.empty());
-        when(userMapper.toEntity(request)).thenReturn(mappedUser);
-        when(passwordEncoder.encode("plainPassword")).thenReturn("encodedPassword");
-        when(userRepository.save(any(User.class))).thenAnswer(invocation -> invocation.getArgument(0));
-        when(userMapper.toResponse(any(User.class)))
-                .thenReturn(new RegisterResponse("Kevin", "kevin@test.com", Role.USER));
-
-        userService.registerUser(request);
-
-        ArgumentCaptor<User> captor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(captor.capture());
-
-        User saved = captor.getValue();
-        assertThat(saved.getPassword()).isEqualTo("encodedPassword");
-        assertThat(saved.getRole()).isEqualTo(Role.USER);
-    }
-
-    @Test
-    void login_shouldThrow_whenEmailNotFound() {
-        LoginRequest request = new LoginRequest();
-        request.setEmail("missing@test.com");
-        request.setPassword("password123");
-
-        when(userRepository.findByEmail("missing@test.com")).thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> userService.login(request))
-                .isInstanceOf(InvalidCredentialsException.class);
-    }
-
-    @Test
-    void login_shouldThrow_whenPasswordDoesNotMatch() {
-        LoginRequest request = new LoginRequest();
-        request.setEmail("kevin@test.com");
-        request.setPassword("wrongPassword");
-
-        User storedUser = buildStoredUser("kevin@test.com", "encodedPassword");
-
-        when(userRepository.findByEmail("kevin@test.com")).thenReturn(Optional.of(storedUser));
-        when(passwordEncoder.matches("wrongPassword", "encodedPassword")).thenReturn(false);
-
-        assertThatThrownBy(() -> userService.login(request))
-                .isInstanceOf(InvalidCredentialsException.class);
-    }
-
-    @Test
-    void login_shouldReturnTokens_whenCredentialsAreValid() {
-        LoginRequest request = new LoginRequest();
-        request.setEmail("kevin@test.com");
-        request.setPassword("correctPassword");
-
-        User storedUser = buildStoredUser("kevin@test.com", "encodedPassword");
-
-        when(userRepository.findByEmail("kevin@test.com")).thenReturn(Optional.of(storedUser));
-        when(passwordEncoder.matches("correctPassword", "encodedPassword")).thenReturn(true);
-        when(jwtService.generateToken(storedUser)).thenReturn("jwt-access-token");
-        when(refreshTokenService.create(storedUser))
-                .thenReturn(new RefreshToken("refresh-token-value", storedUser, Instant.now().plusSeconds(60)));
-
+        // Act
         LoginResult result = userService.login(request);
 
-        assertThat(result.getAccessToken()).isEqualTo("jwt-access-token");
-        assertThat(result.getRefreshToken()).isEqualTo("refresh-token-value");
-        assertThat(result.getEmail()).isEqualTo("kevin@test.com");
-        assertThat(result.getRole()).isEqualTo(Role.USER);
+        // Assert
+        assertEquals(expected.getAccessToken(), result.getAccessToken());
+        assertEquals(expected.getRefreshToken(), result.getRefreshToken());
+        assertEquals(expected.getEmail(), result.getEmail());
+        assertEquals(expected.getRole(), result.getRole());
+        assertEquals(expected.getName(), result.getName());
+        verify(userRepository).findByEmail("test@test.com");
+
+        verify(passwordEncoder)
+                .matches("12345678", "hashedPassword");
+
+        verify(jwtService)
+                .generateToken(user);
+
+        verify(refreshTokenService)
+                .create(user);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenEmailDoesNotExist() {
+
+        // Arrange
+        LoginRequest request = new LoginRequest();
+        request.setEmail("unknown@test.com");
+        request.setPassword("12345678");
+
+        when(userRepository.findByEmail("unknown@test.com"))
+                .thenReturn(Optional.empty());
+
+        // Act + Assert
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.login(request)
+        );
+
+        // Verify
+        verify(userRepository).findByEmail("unknown@test.com");
+
+        verifyNoInteractions(passwordEncoder);
+        verifyNoInteractions(jwtService);
+        verifyNoInteractions(refreshTokenService);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenPasswordIsIncorrect() {
+
+        // Arrange
+        LoginRequest request = new LoginRequest();
+        request.setEmail("test@test.com");
+        request.setPassword("wrongPassword");
+
+        User user = new User();
+        user.setEmail("test@test.com");
+        user.setPassword("hashedPassword");
+        user.setRole(Role.USER);
+        user.setName("Kevin");
+
+        when(userRepository.findByEmail("test@test.com"))
+                .thenReturn(Optional.of(user));
+
+        when(passwordEncoder.matches(
+                "wrongPassword",
+                "hashedPassword"
+        )).thenReturn(false);
+
+        // Act + Assert
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.login(request)
+        );
+        verify(userRepository).findByEmail("test@test.com");
+
+        verify(passwordEncoder)
+                .matches("wrongPassword", "hashedPassword");
+
+        verifyNoInteractions(jwtService);
+
+        verifyNoInteractions(refreshTokenService);
     }
 }
