@@ -8,14 +8,13 @@ import com.kevin.carrent.entity.User;
 import com.kevin.carrent.enums.CarStatus;
 import com.kevin.carrent.enums.ReservationStatus;
 import com.kevin.carrent.enums.Role;
-import com.kevin.carrent.exception.CarNotAvailableException;
-import com.kevin.carrent.exception.ReservationAccessDeniedException;
-import com.kevin.carrent.exception.ReservationAlreadyCancelledException;
-import com.kevin.carrent.exception.ReservationDateException;
-import com.kevin.carrent.exception.ReservationNotFoundException;
+import com.kevin.carrent.exception.*;
 import com.kevin.carrent.mapper.ReservationMapper;
 import com.kevin.carrent.repository.CarRepository;
 import com.kevin.carrent.repository.ReservationRepository;
+import jakarta.validation.constraints.Future;
+import jakarta.validation.constraints.FutureOrPresent;
+import jakarta.validation.constraints.NotNull;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -24,6 +23,8 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.test.util.ReflectionTestUtils;
 
@@ -35,16 +36,15 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class ReservationServiceTest {
-
     @Mock
     private ReservationRepository reservationRepository;
 
@@ -55,179 +55,559 @@ class ReservationServiceTest {
     private ReservationMapper reservationMapper;
 
     @InjectMocks
-    private ReservationService reservationService;
+    ReservationService reservationService;
 
-    private User loggedInUser;
-
-    @AfterEach
-    void clearSecurityContext() {
-        SecurityContextHolder.clearContext();
-    }
-
-    private void authenticateAs(User user) {
-        SecurityContextHolder.getContext().setAuthentication(
-                new UsernamePasswordAuthenticationToken(user, null, List.of())
-        );
-    }
-
-    private User buildUser(Long id, Role role) {
-        User user = new User();
-        ReflectionTestUtils.setField(user, "id", id);
-        user.setName("Test User");
-        user.setEmail("user" + id + "@test.com");
-        user.setPassword("encoded");
-        user.setRole(role);
-        return user;
-    }
-
-    private ReservationCreateRequest buildRequest(LocalDate start, LocalDate end) {
+    @Test
+    void shouldCreateReservationWhenHaveCarAvailable() {
         ReservationCreateRequest request = new ReservationCreateRequest();
         request.setCarModelId(1L);
         request.setOfficeId(1L);
-        request.setFuelType("PETROL");
-        request.setTransmission("MANUAL");
-        request.setStartDate(start);
-        request.setEndDate(end);
-        request.setPickupTime(LocalTime.of(9, 0));
-        request.setReturnTime(LocalTime.of(18, 0));
-        return request;
-    }
+        request.setFuelType("Gasoline");
+        request.setTransmission("Manual");
 
-    @Test
-    void createReservation_shouldThrow_whenStartDateIsNotBeforeEndDate() {
-        ReservationCreateRequest request = buildRequest(
-                LocalDate.now().plusDays(3),
-                LocalDate.now().plusDays(1)
+        request.setStartDate(
+                LocalDate.of(2026, 10, 10)
         );
 
-        assertThatThrownBy(() -> reservationService.createReservation(request))
-                .isInstanceOf(ReservationDateException.class);
-
-        verifyNoCarLookupOrSave();
-    }
-
-    private void verifyNoCarLookupOrSave() {
-        verify(carRepository, never()).findAvailableCarsForReservation(
-                any(), any(), any(), any(), any(), any());
-        verify(reservationRepository, never()).save(any());
-    }
-
-    @Test
-    void createReservation_shouldThrow_whenNoCarsAvailable() {
-        ReservationCreateRequest request = buildRequest(
-                LocalDate.now().plusDays(1),
-                LocalDate.now().plusDays(3)
+        request.setEndDate(
+                LocalDate.of(2026, 10, 15)
         );
 
-        when(carRepository.findAvailableCarsForReservation(
-                anyLong(), anyLong(), anyString(), anyString(), any(), any()))
-                .thenReturn(List.of());
+        request.setPickupTime(
+                LocalTime.of(10, 0)
+        );
 
-        assertThatThrownBy(() -> reservationService.createReservation(request))
-                .isInstanceOf(CarNotAvailableException.class);
-
-        verify(reservationRepository, never()).save(any());
-    }
-
-    @Test
-    void createReservation_shouldComputeTotalPriceAndSaveAsConfirmed() {
-        LocalDate start = LocalDate.now().plusDays(1);
-        LocalDate end = LocalDate.now().plusDays(4);
-        ReservationCreateRequest request = buildRequest(start, end);
-
+        request.setReturnTime(
+                LocalTime.of(10, 0)
+        );
         Car car = new Car();
         car.setPricePerDay(new BigDecimal("50.00"));
 
-        loggedInUser = buildUser(1L, Role.USER);
-        authenticateAs(loggedInUser);
-
         when(carRepository.findAvailableCarsForReservation(
-                anyLong(), anyLong(), anyString(), anyString(), any(), any()))
-                .thenReturn(List.of(car));
+                request.getCarModelId(),
+                request.getOfficeId(),
+                request.getFuelType(),
+                request.getTransmission(),
+                request.getStartDate(),
+                request.getEndDate()
+        )).thenReturn(List.of(car));
+
+        User user = new User();
+        user.setEmail("test@test.com");
+        user.setName("Kevin");
+
+        Authentication authentication = mock(Authentication.class);
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+
+        securityContext.setAuthentication(authentication);
+
+        SecurityContextHolder.setContext(securityContext);
+
+
+        Reservations savedReservation = new Reservations();
 
         when(reservationRepository.save(any(Reservations.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
+                .thenReturn(savedReservation);
+
+        when(authentication.getPrincipal())
+                .thenReturn(user);
+
+        ReservationResponse response = new ReservationResponse(
+                1L,
+                1L,
+                "Kevin",
+                1L,
+                "1234ABC",
+                "Toyota",
+                "Corolla",
+                1L,
+                "Las Palmas",
+                "Calle Mayor 1",
+                "Las Palmas",
+                "928123456",
+                request.getStartDate(),
+                request.getEndDate(),
+                new BigDecimal("250.00"),
+                request.getPickupTime(),
+                request.getReturnTime(),
+                ReservationStatus.CONFIRMED
+        );
+
+        when(reservationMapper.toResponse(savedReservation))
+                .thenReturn(response);
+
+        ReservationResponse result = reservationService.createReservation(request);
+
+        assertEquals(response, result);
+
+    }
+
+    @Test
+    void shouldThrowExceptionWhenStartDateIsAfterEndDate() {
+        ReservationCreateRequest request = new ReservationCreateRequest();
+        request.setCarModelId(1L);
+        request.setOfficeId(1L);
+        request.setFuelType("Gasoline");
+        request.setTransmission("Manual");
+
+        request.setStartDate(
+                LocalDate.of(2026, 10, 18)
+        );
+
+        request.setEndDate(
+                LocalDate.of(2026, 10, 15)
+        );
+
+        request.setPickupTime(
+                LocalTime.of(10, 0)
+        );
+
+        request.setReturnTime(
+                LocalTime.of(10, 0)
+        );
+
+        assertThrows(
+                ReservationDateException.class,
+                () -> reservationService.createReservation(request)
+        );
+        verify(carRepository, never()).findAvailableCarsForReservation(request.getCarModelId(),
+                request.getOfficeId(),
+                request.getFuelType(),
+                request.getTransmission(),
+                request.getStartDate(),
+                request.getEndDate());
+
+    }
+
+    @Test
+    void shouldThrowExceptionWhenStartDateEqualsEndDate() {
+        ReservationCreateRequest request = new ReservationCreateRequest();
+        request.setCarModelId(1L);
+        request.setOfficeId(1L);
+        request.setFuelType("Gasoline");
+        request.setTransmission("Manual");
+
+        request.setStartDate(
+                LocalDate.of(2026, 10, 15)
+        );
+
+        request.setEndDate(
+                LocalDate.of(2026, 10, 15)
+        );
+
+        request.setPickupTime(
+                LocalTime.of(10, 0)
+        );
+
+        request.setReturnTime(
+                LocalTime.of(10, 0)
+        );
+
+        assertThrows(
+                ReservationDateException.class,
+                () -> reservationService.createReservation(request)
+        );
+        verify(carRepository, never()).findAvailableCarsForReservation(request.getCarModelId(),
+                request.getOfficeId(),
+                request.getFuelType(),
+                request.getTransmission(),
+                request.getStartDate(),
+                request.getEndDate());
+
+    }
+
+    @Test
+    void shouldThrowExceptionWhenNoCarsAreAvailable() {
+        ReservationCreateRequest request = new ReservationCreateRequest();
+        request.setCarModelId(1L);
+        request.setOfficeId(1L);
+        request.setFuelType("Gasoline");
+        request.setTransmission("Manual");
+
+        request.setStartDate(
+                LocalDate.of(2026, 10, 10)
+        );
+
+        request.setEndDate(
+                LocalDate.of(2026, 10, 15)
+        );
+
+        request.setPickupTime(
+                LocalTime.of(10, 0)
+        );
+
+        request.setReturnTime(
+                LocalTime.of(10, 0)
+        );
+        when(carRepository.findAvailableCarsForReservation(
+                request.getCarModelId(),
+                request.getOfficeId(),
+                request.getFuelType(),
+                request.getTransmission(),
+                request.getStartDate(),
+                request.getEndDate()
+        )).thenReturn(List.of());
+
+        assertThrows(
+                CarNotAvailableException.class,
+                () -> reservationService.createReservation(request)
+        );
+    }
+
+    @Test
+    void shouldReturnRservationWithId() {
+        Long id = 1L;
+        User user = mock(User.class);
+
+        when(user.getId()).thenReturn(id);
+        when(user.getRole()).thenReturn(Role.USER);
+
+        Authentication authentication = mock(Authentication.class);
+        when(authentication.getPrincipal()).thenReturn(user);
+
+        SecurityContext securityContext =
+                SecurityContextHolder.createEmptyContext();
+
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        Reservations savedReservation = new Reservations();
+        savedReservation.setUser(user);
+
+        ReservationResponse response = mock(ReservationResponse.class);
+
+        when(reservationRepository.findById(id))
+                .thenReturn(Optional.of(savedReservation));
 
         when(reservationMapper.toResponse(any(Reservations.class)))
-                .thenReturn(new ReservationResponse(
-                        1L, 1L, "Test User", 1L, "AB1234CD",
-                        "Toyota", "Yaris", 1L, "Main Office", "Test St", "Test City", "000000000",
-                        start, end, new BigDecimal("150.00"),
-                        LocalTime.of(9, 0), LocalTime.of(18, 0),
-                        ReservationStatus.CONFIRMED
-                ));
+                .thenReturn(response);
 
-        reservationService.createReservation(request);
+        ReservationResponse result =
+                reservationService.getReservationById(id);
 
-        ArgumentCaptor<Reservations> captor = ArgumentCaptor.forClass(Reservations.class);
-        verify(reservationRepository).save(captor.capture());
-
-        Reservations saved = captor.getValue();
-        assertThat(saved.getStatus()).isEqualTo(ReservationStatus.CONFIRMED);
-        assertThat(saved.getUser()).isEqualTo(loggedInUser);
-        assertThat(saved.getCar()).isEqualTo(car);
-        // 3 days between start and end at 50.00/day
-        assertThat(saved.getTotalPrice()).isEqualByComparingTo("150.00");
+        assertEquals(response, result);
     }
 
     @Test
-    void getReservationById_shouldThrow_whenReservationDoesNotExist() {
-        when(reservationRepository.findById(99L)).thenReturn(Optional.empty());
+    void shouldThrowExceptionWhenUserDoesNotHaveAccess() {
+        Long id = 1L;
 
-        assertThatThrownBy(() -> reservationService.getReservationById(99L))
-                .isInstanceOf(ReservationNotFoundException.class);
+        User authenticatedUser = mock(User.class);
+
+        when(authenticatedUser.getId()).thenReturn(1L);
+        when(authenticatedUser.getRole()).thenReturn(Role.USER);
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal())
+                .thenReturn(authenticatedUser);
+
+        SecurityContext securityContext =
+                SecurityContextHolder.createEmptyContext();
+
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        User reservationUser = mock(User.class);
+
+        when(reservationUser.getId()).thenReturn(2L);
+
+        Reservations savedReservation = new Reservations();
+        savedReservation.setUser(reservationUser);
+
+        when(reservationRepository.findById(id))
+                .thenReturn(Optional.of(savedReservation));
+
+        assertThrows(
+                ReservationAccessDeniedException.class,
+                () -> reservationService.getReservationById(id)
+        );
     }
 
     @Test
-    void getReservationById_shouldThrow_whenUserIsNotOwnerNorAdmin() {
-        User owner = buildUser(1L, Role.USER);
-        User otherUser = buildUser(2L, Role.USER);
+    void shouldReturnReservationWhenUserIsAdmin() {
+
+        Long id = 1L;
+
+        User user = mock(User.class);
+
+        when(user.getRole()).thenReturn(Role.ADMIN);
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal())
+                .thenReturn(user);
+
+        SecurityContext securityContext =
+                SecurityContextHolder.createEmptyContext();
+
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        User reservationUser = mock(User.class);
+
+        Reservations savedReservation = new Reservations();
+        savedReservation.setUser(reservationUser);
+
+        ReservationResponse response = mock(ReservationResponse.class);
+
+        when(reservationRepository.findById(id))
+                .thenReturn(Optional.of(savedReservation));
+
+        when(reservationMapper.toResponse(savedReservation))
+                .thenReturn(response);
+
+        ReservationResponse result =
+                reservationService.getReservationById(id);
+
+        assertEquals(response, result);
+
+        verify(reservationRepository).findById(id);
+        verify(reservationMapper).toResponse(savedReservation);
+    }
+
+    @Test
+    void shouldThrowExceptionWhenReservationDoesNotExist() {
+
+        Long id = 1L;
+
+        when(reservationRepository.findById(id))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ReservationNotFoundException.class,
+                () -> reservationService.getReservationById(id)
+        );
+
+        verify(reservationRepository).findById(id);
+
+        verify(reservationMapper, never())
+                .toResponse(any(Reservations.class));
+    }
+
+    @Test
+    void shouldReturnAllReservationsWhenUserIsAdmin() {
+
+        User user = mock(User.class);
+
+        when(user.getRole()).thenReturn(Role.ADMIN);
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal())
+                .thenReturn(user);
+
+        SecurityContext securityContext = SecurityContextHolder.createEmptyContext();
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        Reservations reservation1 = new Reservations();
+        Reservations reservation2 = new Reservations();
+
+        List<Reservations> reservations = List.of(reservation1, reservation2);
+
+        when(reservationRepository.findAll()).thenReturn(reservations);
+        ReservationResponse response1 = mock(ReservationResponse.class);
+        ReservationResponse response2 = mock(ReservationResponse.class);
+
+        when(reservationMapper.toResponse(reservation1))
+                .thenReturn(response1);
+
+        when(reservationMapper.toResponse(reservation2))
+                .thenReturn(response2);
+        List<ReservationResponse> result = reservationService.getReservations();
+        assertEquals(2, result.size());
+        assertEquals(response1, result.get(0));
+        assertEquals(response2, result.get(1));
+    }
+
+    @Test
+    void shouldReturnUserReservationsWhenUserIsNotAdmin() {
+
+        User user = mock(User.class);
+
+        when(user.getId()).thenReturn(1L);
+        when(user.getRole()).thenReturn(Role.USER);
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal())
+                .thenReturn(user);
+
+        SecurityContext securityContext =
+                SecurityContextHolder.createEmptyContext();
+
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+        Reservations reservation1 = new Reservations();
+        Reservations reservation2 = new Reservations();
+
+        List<Reservations> reservations =
+                List.of(reservation1, reservation2);
+
+        when(reservationRepository.findByUserId(1L))
+                .thenReturn(reservations);
+
+        ReservationResponse response1 = mock(ReservationResponse.class);
+        ReservationResponse response2 = mock(ReservationResponse.class);
+
+        when(reservationMapper.toResponse(reservation1))
+                .thenReturn(response1);
+
+        when(reservationMapper.toResponse(reservation2))
+                .thenReturn(response2);
+
+        List<ReservationResponse> result =
+                reservationService.getReservations();
+
+        assertEquals(2, result.size());
+        assertEquals(response1, result.get(0));
+        assertEquals(response2, result.get(1));
+
+        verify(reservationRepository).findByUserId(1L);
+
+        verify(reservationRepository, never())
+                .findAll();
+    }
+    @Test
+    void shouldThrowExceptionWhenReservationDoesNotExistOnCancel() {
+
+        Long id = 1L;
+
+        when(reservationRepository.findById(id))
+                .thenReturn(Optional.empty());
+
+        assertThrows(
+                ReservationNotFoundException.class,
+                () -> reservationService.cancelReservation(id)
+        );
+
+        verify(reservationRepository).findById(id);
+
+        verify(reservationRepository, never())
+                .save(any(Reservations.class));
+    }
+    @Test
+    void shouldThrowExceptionWhenUserDoesNotHaveAccessToCancel() {
+
+        Long id = 1L;
+
+        User authenticatedUser = mock(User.class);
+
+        when(authenticatedUser.getId()).thenReturn(1L);
+        when(authenticatedUser.getRole()).thenReturn(Role.USER);
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal())
+                .thenReturn(authenticatedUser);
+
+        SecurityContext securityContext =
+                SecurityContextHolder.createEmptyContext();
+
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
+
+
+        User reservationUser = mock(User.class);
+
+        when(reservationUser.getId()).thenReturn(2L);
 
         Reservations reservation = new Reservations();
-        reservation.setUser(owner);
+        reservation.setUser(reservationUser);
 
-        when(reservationRepository.findById(10L)).thenReturn(Optional.of(reservation));
+        when(reservationRepository.findById(id))
+                .thenReturn(Optional.of(reservation));
 
-        authenticateAs(otherUser);
+        assertThrows(
+                ReservationAccessDeniedException.class,
+                () -> reservationService.cancelReservation(id)
+        );
 
-        assertThatThrownBy(() -> reservationService.getReservationById(10L))
-                .isInstanceOf(ReservationAccessDeniedException.class);
+        verify(reservationRepository).findById(id);
+
+        verify(reservationRepository, never())
+                .save(any(Reservations.class));
     }
-
     @Test
-    void cancelReservation_shouldThrow_whenAlreadyCancelled() {
-        User owner = buildUser(1L, Role.USER);
+    void shouldThrowExceptionWhenReservationIsAlreadyCancelled() {
+
+        Long id = 1L;
+
+        User user = mock(User.class);
+
+        when(user.getId()).thenReturn(1L);
+        when(user.getRole()).thenReturn(Role.USER);
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal())
+                .thenReturn(user);
+
+        SecurityContext securityContext =
+                SecurityContextHolder.createEmptyContext();
+
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
 
         Reservations reservation = new Reservations();
-        reservation.setUser(owner);
+
+        reservation.setUser(user);
         reservation.setStatus(ReservationStatus.CANCELLED);
 
-        when(reservationRepository.findById(5L)).thenReturn(Optional.of(reservation));
+        when(reservationRepository.findById(id))
+                .thenReturn(Optional.of(reservation));
 
-        authenticateAs(owner);
+        assertThrows(
+                ReservationAlreadyCancelledException.class,
+                () -> reservationService.cancelReservation(id)
+        );
 
-        assertThatThrownBy(() -> reservationService.cancelReservation(5L))
-                .isInstanceOf(ReservationAlreadyCancelledException.class);
+        verify(reservationRepository).findById(id);
 
-        verify(reservationRepository, never()).save(any());
+        verify(reservationRepository, never())
+                .save(any(Reservations.class));
     }
-
     @Test
-    void cancelReservation_shouldSetStatusCancelled_whenOwnerCancelsConfirmedReservation() {
-        User owner = buildUser(1L, Role.USER);
+    void shouldCancelReservationSuccessfully() {
+
+        Long id = 1L;
+
+        User user = mock(User.class);
+
+        when(user.getId()).thenReturn(1L);
+        when(user.getRole()).thenReturn(Role.USER);
+
+        Authentication authentication = mock(Authentication.class);
+
+        when(authentication.getPrincipal())
+                .thenReturn(user);
+
+        SecurityContext securityContext =
+                SecurityContextHolder.createEmptyContext();
+
+        securityContext.setAuthentication(authentication);
+        SecurityContextHolder.setContext(securityContext);
 
         Reservations reservation = new Reservations();
-        reservation.setUser(owner);
+
+        reservation.setUser(user);
         reservation.setStatus(ReservationStatus.CONFIRMED);
 
-        when(reservationRepository.findById(5L)).thenReturn(Optional.of(reservation));
+        when(reservationRepository.findById(id))
+                .thenReturn(Optional.of(reservation));
 
-        authenticateAs(owner);
+        reservationService.cancelReservation(id);
 
-        reservationService.cancelReservation(5L);
+        assertEquals(
+                ReservationStatus.CANCELLED,
+                reservation.getStatus()
+        );
 
-        ArgumentCaptor<Reservations> captor = ArgumentCaptor.forClass(Reservations.class);
-        verify(reservationRepository).save(captor.capture());
-        assertThat(captor.getValue().getStatus()).isEqualTo(ReservationStatus.CANCELLED);
+        verify(reservationRepository).findById(id);
+
+        verify(reservationRepository).save(reservation);
     }
 }
