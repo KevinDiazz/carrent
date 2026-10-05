@@ -21,8 +21,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import java.time.Instant;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 
@@ -236,5 +235,65 @@ class UserServiceTest {
         verifyNoInteractions(jwtService);
 
         verifyNoInteractions(refreshTokenService);
+    }
+
+    @Test
+    void shouldGenerateTokensWhenLoginIsSuccessful() {
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail("kevin@test.com");
+        request.setPassword("password");
+
+        User user = mock(User.class);
+        when(user.getPassword()).thenReturn("encoded-password");
+
+        RefreshToken refreshToken = mock(RefreshToken.class);
+
+        when(userRepository.findByEmail("kevin@test.com"))
+                .thenReturn(Optional.of(user));
+
+        when(passwordEncoder.matches("password", "encoded-password"))
+                .thenReturn(true);
+
+        when(jwtService.generateToken(user))
+                .thenReturn("access-token");
+
+        when(refreshTokenService.create(user))
+                .thenReturn(refreshToken);
+
+        LoginResult result = userService.login(request);
+
+        assertNotNull(result);
+
+        verify(jwtService).generateToken(user);
+        verify(refreshTokenService).create(user);
+    }
+
+    @Test
+    void shouldNotGenerateTokensWhenPasswordIsIncorrect() {
+
+        LoginRequest request = new LoginRequest();
+        request.setEmail("kevin@test.com");
+        request.setPassword("wrong-password");
+
+        User user = mock(User.class);
+
+        when(user.getPassword()).thenReturn("encoded-password");
+
+        when(userRepository.findByEmail("kevin@test.com"))
+                .thenReturn(Optional.of(user));
+
+        when(passwordEncoder.matches(
+                "wrong-password",
+                "encoded-password"
+        )).thenReturn(false);
+
+        assertThrows(
+                InvalidCredentialsException.class,
+                () -> userService.login(request)
+        );
+
+        verify(jwtService, never()).generateToken(any(User.class));
+        verify(refreshTokenService, never()).create(any(User.class));
     }
 }
