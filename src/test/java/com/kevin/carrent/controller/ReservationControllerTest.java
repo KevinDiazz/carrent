@@ -58,8 +58,8 @@ class ReservationControllerTest {
                 "Calle Mayor 10",
                 "Las Palmas",
                 "928123456",
-                LocalDate.of(2026, 10, 1),
-                LocalDate.of(2026, 10, 5),
+                LocalDate.of(2027, 10, 1),
+                LocalDate.of(2027, 10, 5),
                 new BigDecimal("150.00"),
                 LocalTime.of(10, 0),
                 LocalTime.of(18, 0),
@@ -79,8 +79,8 @@ class ReservationControllerTest {
                 "Avenida de Canarias 20",
                 "Maspalomas",
                 "928654321",
-                LocalDate.of(2026, 10, 10),
-                LocalDate.of(2026, 10, 15),
+                LocalDate.of(2027, 10, 10),
+                LocalDate.of(2027, 10, 15),
                 new BigDecimal("300.00"),
                 LocalTime.of(9, 0),
                 LocalTime.of(17, 0),
@@ -118,8 +118,8 @@ class ReservationControllerTest {
                 "Avenida de Canarias 20",
                 "Maspalomas",
                 "928654321",
-                LocalDate.of(2026, 10, 10),
-                LocalDate.of(2026, 10, 15),
+                LocalDate.of(2027, 10, 10),
+                LocalDate.of(2027, 10, 15),
                 new BigDecimal("300.00"),
                 LocalTime.of(9, 0),
                 LocalTime.of(17, 0),
@@ -169,8 +169,8 @@ class ReservationControllerTest {
                 "Calle Mayor 10",
                 "Las Palmas",
                 "928123456",
-                LocalDate.of(2026, 10, 2),
-                LocalDate.of(2026, 10, 5),
+                LocalDate.of(2027, 10, 2),
+                LocalDate.of(2027, 10, 5),
                 new BigDecimal("150.00"),
                 LocalTime.of(10, 0),
                 LocalTime.of(18, 0),
@@ -189,8 +189,8 @@ class ReservationControllerTest {
                                                 "officeId": 2,
                                                 "fuelType": "PETROL",
                                                 "transmission": "MANUAL",
-                                                "startDate": "2026-10-02",
-                                                "endDate": "2026-10-05",
+                                                "startDate": "2027-10-02",
+                                                "endDate": "2027-10-05",
                                                 "pickupTime": "10:00:00",
                                                 "returnTime": "18:00:00"
                                             }
@@ -220,8 +220,8 @@ class ReservationControllerTest {
                                                 "officeId": 2,
                                                 "fuelType": "PETROL",
                                                 "transmission": "MANUAL",
-                                                "startDate": "2026-10-02",
-                                                "endDate": "2026-10-05",
+                                                "startDate": "2027-10-02",
+                                                "endDate": "2027-10-05",
                                                 "pickupTime": "10:00:00",
                                                 "returnTime": "18:00:00"
                                             }
@@ -243,7 +243,7 @@ class ReservationControllerTest {
                                                 "fuelType": "PETROL",
                                                 "transmission": "MANUAL",
                                                 "startDate": "2026-09-20",
-                                                "endDate": "2026-10-05",
+                                                "endDate": "2027-10-05",
                                                 "pickupTime": "10:00:00",
                                                 "returnTime": "18:00:00"
                                             }
@@ -265,8 +265,8 @@ class ReservationControllerTest {
                                                 "officeId": 2,
                                                 "fuelType": "PETROL",
                                                 "transmission": "MANUAL",
-                                                "startDate": "2026-10-02",
-                                                "endDate": "2026-09-02",
+                                                "startDate": "2026-09-20",
+                                                "endDate": "2026-10-05",
                                                 "pickupTime": "10:00:00",
                                                 "returnTime": "18:00:00"
                                             }
@@ -286,8 +286,8 @@ class ReservationControllerTest {
                                                 "carModelId": 1,
                                                 "fuelType": "PETROL",
                                                 "transmission": "MANUAL",
-                                                "startDate": "2026-10-02",
-                                                "endDate": "2026-10-05",
+                                                "startDate": "2027-10-02",
+                                                "endDate": "2027-10-05",
                                                 "pickupTime": "10:00:00",
                                                 "returnTime": "18:00:00"
                                             }
@@ -309,8 +309,8 @@ class ReservationControllerTest {
                                                 "officeId": 2,
                                                 "fuelType": "PETROL",
                                                 "transmission": "MANUAL",
-                                                "startDate": "2026-10-02",
-                                                "endDate": "2026-10-05",
+                                                "startDate": "2027-10-02",
+                                                "endDate": "2027-10-05",
                                                 "pickupTime": "10:00:00",
                                                 "returnTime": "18:00:00"
                                             }
